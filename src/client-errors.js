@@ -76,15 +76,53 @@ export async function handleClientError(request, env, upsertIncident) {
   }
 }
 
+export async function handleClientHealth(request, env, recordHealth) {
+  const origin = request.headers.get('origin') || '';
+  const allowed = allowedOrigin(origin);
+  if (!allowed) return json({ ok: false, error: 'Origin not allowed.' }, 403, origin);
+
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: clientCors(origin) });
+  }
+  if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed.' }, 405, origin);
+
+  let raw;
+  try {
+    const text = await request.text();
+    if (text.length > MAX_BODY_BYTES) return json({ ok: false, error: 'Report too large.' }, 413, origin);
+    raw = JSON.parse(text || '{}');
+  } catch {
+    return json({ ok: false, error: 'Request body must be valid JSON.' }, 400, origin);
+  }
+
+  const host = new URL(origin).hostname.toLowerCase();
+  const source = SOURCE_NAMES[host] || host;
+  const page = safePath(raw?.pageUrl, host);
+
+  try {
+    const result = await recordHealth(env, {
+      source,
+      page,
+      observedAt: new Date().toISOString(),
+      userAgent: safe(request.headers.get('user-agent'), 300),
+    });
+    return json({ ok: true, ...result }, 201, origin);
+  } catch (error) {
+    return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 500, origin);
+  }
+}
+
 export function clientReporterScript() {
   const script = `(()=>{\n` +
 `if(window.__CURATOR_CLIENT_ERROR_CAPTURE__)return;window.__CURATOR_CLIENT_ERROR_CAPTURE__=true;\n` +
-`const ENDPOINT='https://errors.oceanliners.net/api/client-error';const seen=new Map();const COOLDOWN=60000;\n` +
+`const BUS='https://errors.oceanliners.net/';const ENDPOINT=BUS+'api/client-error';const HEALTH=BUS+'api/client-health';const seen=new Map();const COOLDOWN=60000;let pageHadError=false;\n` +
 `function clean(v,n=1200){return String(v??'').slice(0,n)}\n` +
-`function send(payload){try{const key=[payload.kind,payload.message,payload.filename,payload.resource].join('|');const now=Date.now();if(now-(seen.get(key)||0)<COOLDOWN)return;seen.set(key,now);const body=JSON.stringify({...payload,pageUrl:location.href});if(navigator.sendBeacon){const blob=new Blob([body],{type:'application/json'});if(navigator.sendBeacon(ENDPOINT,blob))return;}fetch(ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body,keepalive:true,cache:'no-store',credentials:'omit'}).catch(()=>{});}catch{}}\n` +
+`function send(payload){try{pageHadError=true;const key=[payload.kind,payload.message,payload.filename,payload.resource].join('|');const now=Date.now();if(now-(seen.get(key)||0)<COOLDOWN)return;seen.set(key,now);const body=JSON.stringify({...payload,pageUrl:location.href});if(navigator.sendBeacon){const blob=new Blob([body],{type:'application/json'});if(navigator.sendBeacon(ENDPOINT,blob))return;}fetch(ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body,keepalive:true,cache:'no-store',credentials:'omit'}).catch(()=>{});}catch{}}\n` +
+`function sendHealth(){try{if(pageHadError)return;const body=JSON.stringify({pageUrl:location.href});if(navigator.sendBeacon){const blob=new Blob([body],{type:'application/json'});if(navigator.sendBeacon(HEALTH,blob))return;}fetch(HEALTH,{method:'POST',headers:{'content-type':'application/json'},body,keepalive:true,cache:'no-store',credentials:'omit'}).catch(()=>{});}catch{}}\n` +
 `window.addEventListener('error',e=>{if(e.target&&e.target!==window){const tag=e.target.tagName||'resource';const src=e.target.src||e.target.href||'';send({kind:'resource-error',component:'frontend-resource',message:tag+' failed to load',resource:clean(src)});return;}send({kind:'javascript-error',component:'frontend-runtime',message:clean(e.message||'JavaScript error'),filename:clean(e.filename),line:e.lineno||null,column:e.colno||null,stack:clean(e.error&&e.error.stack,4000)});},true);\n` +
 `window.addEventListener('unhandledrejection',e=>{const r=e.reason;send({kind:'unhandled-rejection',component:'frontend-runtime',message:clean(r&&r.message?r.message:r||'Unhandled promise rejection'),stack:clean(r&&r.stack,4000)});});\n` +
-`const nativeFetch=window.fetch&&window.fetch.bind(window);if(nativeFetch){window.fetch=async function(input,init){try{const response=await nativeFetch(input,init);let u='';try{u=new URL(typeof input==='string'?input:input.url,location.href).href}catch{}if(!response.ok&&u&&!u.startsWith(ENDPOINT)){send({kind:'fetch-http-error',component:'frontend-network',message:'Fetch returned HTTP '+response.status,resource:clean(u),status:response.status,method:clean((init&&init.method)||'GET',12)});}return response;}catch(error){let u='';try{u=new URL(typeof input==='string'?input:input.url,location.href).href}catch{}if(!u.startsWith(ENDPOINT))send({kind:'fetch-network-error',component:'frontend-network',message:clean(error&&error.message||'Fetch failed'),resource:clean(u),method:clean((init&&init.method)||'GET',12),stack:clean(error&&error.stack,4000)});throw error;}}}\n` +
+`const nativeFetch=window.fetch&&window.fetch.bind(window);if(nativeFetch){window.fetch=async function(input,init){try{const response=await nativeFetch(input,init);let u='';try{u=new URL(typeof input==='string'?input:input.url,location.href).href}catch{}if(!response.ok&&u&&!u.startsWith(BUS)){send({kind:'fetch-http-error',component:'frontend-network',message:'Fetch returned HTTP '+response.status,resource:clean(u),status:response.status,method:clean((init&&init.method)||'GET',12)});}return response;}catch(error){let u='';try{u=new URL(typeof input==='string'?input:input.url,location.href).href}catch{}if(!u.startsWith(BUS))send({kind:'fetch-network-error',component:'frontend-network',message:clean(error&&error.message||'Fetch failed'),resource:clean(u),method:clean((init&&init.method)||'GET',12),stack:clean(error&&error.stack,4000)});throw error;}}}\n` +
+`window.addEventListener('load',()=>setTimeout(sendHealth,15000),{once:true});\n` +
 `window.__CURATOR_REPORT_ERROR__=(message,details={})=>send({kind:'manual-client-error',component:clean(details.component||'frontend-manual',100),message:clean(message),...details});\n` +
 `})();`;
   return new Response(script, {
