@@ -41,6 +41,21 @@ export default {
       });
     }
 
+    if (url.pathname === '/api/check-now' && request.method === 'POST') {
+      try {
+        const result = await runImmediateCheck(env);
+        return new Response(JSON.stringify(result, null, 2), {
+          status: 200,
+          headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2), {
+          status: 500,
+          headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
+        });
+      }
+    }
+
     return base.fetch(request, env, ctx);
   },
 
@@ -50,6 +65,38 @@ export default {
     ctx.waitUntil(evaluateClientRecoveries(env).catch(error => console.error('Frontend recovery evaluation failed', error)));
   }
 };
+
+async function runImmediateCheck(env) {
+  const started = Date.now();
+  const housekeeping = [];
+  const manualCtx = {
+    waitUntil(promise) {
+      housekeeping.push(Promise.resolve(promise));
+    }
+  };
+
+  await base.scheduled({ cron: 'manual-check-now', scheduledTime: Date.now() }, env, manualCtx);
+  if (housekeeping.length) await Promise.allSettled(housekeeping);
+
+  const probes = await runPublicSiteInfrastructureProbe(env);
+  await evaluateClientRecoveries(env);
+
+  const statusResponse = await base.fetch(new Request('https://errors.internal/api/status'), env, manualCtx);
+  const status = await statusResponse.json();
+
+  return {
+    ok: true,
+    checkedAt: new Date().toISOString(),
+    durationMs: Date.now() - started,
+    publicSite: {
+      ok: probes.every(item => item.ok),
+      passed: probes.filter(item => item.ok).length,
+      total: probes.length,
+      results: probes,
+    },
+    status,
+  };
+}
 
 async function runPublicSiteInfrastructureProbe(env) {
   if (!env.CURATOR_ERROR_RECORDS) throw new Error('CURATOR_ERROR_RECORDS KV binding is not configured.');
