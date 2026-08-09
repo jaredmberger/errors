@@ -1,8 +1,11 @@
 import base from './entry.js';
-import { handleClientError, clientReporterScript } from './client-errors.js';
+import { handleClientError, handleClientHealth, clientReporterScript } from './client-errors.js';
 
 const INCIDENT_PREFIX = 'incident:';
 const EVENT_PREFIX = 'event:';
+const CLIENT_HEALTH_PREFIX = 'client-health:';
+const CLIENT_RECOVERY_QUIET_MS = 60 * 60 * 1000;
+const CLIENT_RECOVERY_MIN_HEALTHY = 2;
 const PUBLIC_SITE_SOURCE = 'Ocean Liner Curator';
 const PUBLIC_SITE_PROBES = [
   { id: 'homepage', url: 'https://oceanliners.net/', severity: 'p0', minBytes: 5000, expect: /Ocean Liner Curator/i },
@@ -26,6 +29,10 @@ export default {
       return handleClientError(request, env, upsertClientIncident);
     }
 
+    if (url.pathname === '/api/client-health') {
+      return handleClientHealth(request, env, recordClientHealth);
+    }
+
     if (url.pathname === '/api/public-site-probe' && request.method === 'GET') {
       const results = await runPublicSiteInfrastructureProbe(env);
       return new Response(JSON.stringify({ ok: results.every(x => x.ok), generatedAt: new Date().toISOString(), results }, null, 2), {
@@ -40,6 +47,7 @@ export default {
   async scheduled(controller, env, ctx) {
     base.scheduled(controller, env, ctx);
     ctx.waitUntil(runPublicSiteInfrastructureProbe(env).catch(error => console.error('Public site infrastructure probe failed', error)));
+    ctx.waitUntil(evaluateClientRecoveries(env).catch(error => console.error('Frontend recovery evaluation failed', error)));
   }
 };
 
@@ -179,6 +187,58 @@ async function upsertClientIncident(env, raw) {
   return incident;
 }
 
+async function recordClientHealth(env, raw) {
+  if (!env.CURATOR_ERROR_RECORDS) throw new Error('CURATOR_ERROR_RECORDS KV binding is not configured.');
+  const source = clean(raw?.source, 100);
+  const page = clean(raw?.page || '/', 500) || '/';
+  const observedAt = raw?.observedAt || new Date().toISOString();
+  const key = `${CLIENT_HEALTH_PREFIX}${slug(source)}:${await shortHash(page)}`;
+  const previous = await env.CURATOR_ERROR_RECORDS.get(key, 'json');
+  const record = {
+    source,
+    page,
+    firstHealthyAt: previous?.firstHealthyAt || observedAt,
+    lastHealthyAt: observedAt,
+    healthyObservations: Math.max(1, Number(previous?.healthyObservations || 0) + 1),
+  };
+  await env.CURATOR_ERROR_RECORDS.put(key, JSON.stringify(record), { expirationTtl: 60 * 60 * 24 * 7 });
+  return { source, page, healthyObservations: record.healthyObservations, lastHealthyAt: observedAt };
+}
+
+async function evaluateClientRecoveries(env) {
+  if (!env.CURATOR_ERROR_RECORDS) throw new Error('CURATOR_ERROR_RECORDS KV binding is not configured.');
+  const listed = await env.CURATOR_ERROR_RECORDS.list({ prefix: INCIDENT_PREFIX, limit: 1000 });
+  const now = Date.now();
+
+  for (const item of listed.keys) {
+    const incident = await env.CURATOR_ERROR_RECORDS.get(item.name, 'json');
+    if (!incident || incident.status !== 'active' || !String(incident.type || '').startsWith('client-')) continue;
+
+    const page = clean(incident?.context?.page || '/', 500) || '/';
+    const healthKey = `${CLIENT_HEALTH_PREFIX}${slug(incident.source)}:${await shortHash(page)}`;
+    const health = await env.CURATOR_ERROR_RECORDS.get(healthKey, 'json');
+    if (!health) continue;
+
+    const lastErrorMs = Date.parse(incident.lastSeenAt || 0);
+    const lastHealthyMs = Date.parse(health.lastHealthyAt || 0);
+    if (!Number.isFinite(lastErrorMs) || !Number.isFinite(lastHealthyMs)) continue;
+    if (now - lastErrorMs < CLIENT_RECOVERY_QUIET_MS) continue;
+    if (lastHealthyMs <= lastErrorMs) continue;
+    if (Number(health.healthyObservations || 0) < CLIENT_RECOVERY_MIN_HEALTHY) continue;
+
+    const recoveredAt = new Date().toISOString();
+    const recovered = {
+      ...incident,
+      status: 'recovered',
+      recoveredAt,
+      lastSuccessfulAt: health.lastHealthyAt,
+      recoveryMessage: `Automatically recovered after ${CLIENT_RECOVERY_MIN_HEALTHY}+ healthy observations and 60 minutes without recurrence.`,
+    };
+    await env.CURATOR_ERROR_RECORDS.put(item.name, JSON.stringify(recovered), { expirationTtl: 60 * 60 * 24 * 180 });
+    await writeEvent(env, 'client-auto-recovery', recovered);
+  }
+}
+
 async function writeEvent(env, kind, incident) {
   const now = new Date().toISOString();
   const eventKey = `${EVENT_PREFIX}${now}:${Math.random().toString(36).slice(2, 8)}`;
@@ -200,7 +260,13 @@ async function fingerprintFor(source, component, type, message) {
   const hash = await crypto.subtle.digest('SHA-256', bytes);
   return 'client-' + [...new Uint8Array(hash)].map(byte => byte.toString(16).padStart(2, '0')).join('').slice(0, 32);
 }
+async function shortHash(value) {
+  const bytes = new TextEncoder().encode(String(value || ''));
+  const hash = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(hash)].map(byte => byte.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
 function clean(value, max = 500) { return String(value ?? '').trim().slice(0, max); }
+function slug(value) { return clean(value, 100).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'unknown'; }
 function sanitizeObject(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   const out = {};
