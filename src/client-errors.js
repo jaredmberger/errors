@@ -1,6 +1,8 @@
 const MAX_BODY_BYTES = 12000;
 const ALLOWED_HOST_RE = /^(?:[a-z0-9-]+\.)*oceanliners\.net$/i;
 const SOURCE_NAMES = {
+  'oceanliners.net': 'Ocean Liner Curator',
+  'www.oceanliners.net': 'Ocean Liner Curator',
   'tools.oceanliners.net': 'Curator Intelligence',
   'curator.oceanliners.net': 'CuratorOS',
   'site-health.oceanliners.net': 'Site Health',
