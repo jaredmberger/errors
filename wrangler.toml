@@ -1,5 +1,5 @@
 name = "curatoros-errors"
-main = "src/entry-v1.7.js"
+main = "src/entry-v1.8.js"
 compatibility_date = "2026-08-09"
 workers_dev = true
 
