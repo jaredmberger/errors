@@ -1,5 +1,5 @@
 name = "curatoros-errors"
-main = "src/entry-v1.15.js"
+main = "src/entry-v1.16.js"
 compatibility_date = "2026-08-09"
 workers_dev = true
 
@@ -8,7 +8,7 @@ binding = "CURATOR_ERROR_RECORDS"
 id = "447306da3a754b44830d2ac8608322c0"
 
 [triggers]
-crons = ["47 * * * *"]
+crons = ["* * * * *", "47 * * * *"]
 
 [observability]
 enabled = true
