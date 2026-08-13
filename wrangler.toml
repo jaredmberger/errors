@@ -1,8 +1,11 @@
 name = "curatoros-errors"
-main = "src/entry-v1.21.js"
+main = "src/entry-v1.22.js"
 compatibility_date = "2026-08-09"
 compatibility_flags = ["global_fetch_strictly_public"]
 workers_dev = true
+
+[build]
+command = "node scripts/write-build-meta.mjs"
 
 [[kv_namespaces]]
 binding = "CURATOR_ERROR_RECORDS"
