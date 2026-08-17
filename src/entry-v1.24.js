@@ -1,4 +1,5 @@
 import base from './entry-v1.23.js';
+import { BUILD_META } from './build-meta.generated.js';
 
 const KV = 'CURATOR_ERROR_RECORDS';
 const HEARTBEAT_PREFIX = 'heartbeat:';
@@ -44,6 +45,12 @@ export default {
         version: VERSION,
         repository: REPOSITORY,
         runtime: 'cloudflare-workers',
+        build: {
+          commit: BUILD_META.commit,
+          branch: BUILD_META.branch,
+          buildUuid: BUILD_META.buildUuid,
+          source: BUILD_META.source
+        },
         cloudflareVersion: {
           id: meta.id || null,
           tag: meta.tag || null,
