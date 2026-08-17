@@ -14,6 +14,21 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // Curator Ops adds ?opsProbe=<timestamp> to reachability checks.
+    // Return a deliberately lightweight liveness response so Ops does not
+    // trigger the full incident-registry scan performed by the normal
+    // /api/status endpoint.
+    if (request.method === 'GET' && url.pathname === '/api/status' && url.searchParams.has('opsProbe')) {
+      return json({
+        ok: true,
+        service: SERVICE,
+        version: VERSION,
+        status: 'healthy',
+        probe: 'liveness',
+        generatedAt: new Date().toISOString()
+      });
+    }
+
     if (request.method === 'POST' && url.pathname === '/api/heartbeat') {
       const auth = authorizeWrite(request, env);
       if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
