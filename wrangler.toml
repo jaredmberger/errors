@@ -1,5 +1,5 @@
 name = "error"
-main = "src/entry-v1.27.js"
+main = "src/entry-v1.28.js"
 compatibility_date = "2026-08-09"
 compatibility_flags = ["global_fetch_strictly_public"]
 workers_dev = true
