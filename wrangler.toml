@@ -1,4 +1,4 @@
-name = "curatoros-errors"
+name = "error"
 main = "src/entry-v1.27.js"
 compatibility_date = "2026-08-09"
 compatibility_flags = ["global_fetch_strictly_public"]
