@@ -429,7 +429,7 @@ function normalizeResource(value) {
 function normalizeUserAgent(value) {
   return clean(value, 300)
     .toLowerCase()
-    .replace(/\b(?:version|chrome|crios|firefox|fxios|safari|edg|edgios)\/[\d.]+/g, '$1/<v>')
+    .replace(/\b(version|chrome|crios|firefox|fxios|safari|edg|edgios)\/[\d.]+/g, '$1/<v>')
     .replace(/\bos [\d_]+/g, 'os <v>')
     .replace(/\s+/g, ' ')
     .trim();
