@@ -149,7 +149,7 @@ Important: the occurrence count is the retained lifetime counter for that incide
 
 Current Worker cron triggers:
 
-- `* * * * *` — public-site cross-zone watchdog path only
+- `* * * * *` — public-site cross-zone watchdog plus the bounded verification-assisted noise check inherited from v1.20
 - `47 * * * *` — ordinary Error Bus housekeeping and inherited maintenance
 
-The minutely schedule is deliberately intercepted so it does not run the full maintenance chain once per minute.
+The minutely schedule is deliberately intercepted by the availability layer so the full hourly housekeeping chain does not run once per minute. One-time observation migrations may also execute after a release until their migration marker is written.
