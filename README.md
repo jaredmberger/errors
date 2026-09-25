@@ -1,8 +1,16 @@
 # CuratorOS Error Bus
 
-Central infrastructure incident registry for the CuratorOS ecosystem.
+Central infrastructure incident registry and evidence-driven monitoring layer for the CuratorOS ecosystem.
 
 Production domain: `https://errors.oceanliners.net`
+
+## Production runtime
+
+Current production entrypoint:
+
+- `src/entry-v1.31.js`
+
+The Error Bus still uses the historical layered entry chain for compatibility, but v1.31 deliberately bypasses v1.30's client-script escalation layer and replaces it with the hardened policy described below.
 
 ## Storage
 
@@ -11,6 +19,20 @@ Cloudflare KV binding:
 - Binding: `CURATOR_ERROR_RECORDS`
 - Namespace: `447306da3a754b44830d2ac8608322c0`
 
+## Operating standard
+
+The Error Bus is for infrastructure and operational reliability signals, not ordinary editorial, SEO, content, or optimization findings.
+
+The system favors corroboration over alarm:
+
+- isolated browser failures are observations, not incidents
+- repeated browser script failures must recur within a bounded window and across more than one hashed client signature before they can create an incident
+- browser telemetry alone creates only a P2 triage incident
+- browser-originated incidents are not allowed to become high-confidence priorities without recheck or corroborating system evidence
+- public-site outage escalation requires repeated failed observations and independent confirmation
+- successful visitor evidence can veto a false public-site outage claim
+- active incidents recover from positive health evidence, not merely because a later observation falls below an escalation threshold
+
 ## Core behavior
 
 The Error Bus provides:
@@ -18,16 +40,63 @@ The Error Bus provides:
 - persistent incident records
 - deduplication by stable fingerprint
 - occurrence counts and first/last seen timestamps
-- automatic recovery history
+- recovery history
 - heartbeat/staleness detection
+- browser observation feeds
+- public-site cross-zone watchdog checks
+- independent verification before P0 public-site outage escalation
 - P0 / P1 / P2 infrastructure severity
-- a read-only Curator Intelligence adapter
+- Curator Intelligence and hardware-console adapters
+- top-error analytics
 
-Infrastructure incidents are intended to outrank ordinary optimization findings in Curator Intelligence.
+## Severity
 
-## Reporting pattern
+- **P0** — independently confirmed system-critical failure, including verified public-site unavailability
+- **P1** — degraded or failed infrastructure component supported by operational evidence
+- **P2** — lower-risk system warning or triage incident that warrants review but is not yet a high-confidence outage
+- **Observation** — low-confidence telemetry retained for pattern detection but not counted as an operational incident
 
-Cloudflare Workers in the CuratorOS ecosystem should bind the shared `CURATOR_ERROR_RECORDS` namespace and write directly through the standard `error-bus.js` helper pattern. Direct KV reporting avoids creating a network dependency on the error-reporting system itself.
+Do not use the Error Bus for ordinary editorial, SEO, or content findings. Those remain specialist intelligence signals.
+
+## Browser telemetry policy
+
+### Client network failures
+
+Single-browser `fetch-network-error` reports are stored as observations. They do not directly create operational incidents because local connectivity, browser state, extensions, VPNs, and transient routing can produce misleading failures.
+
+### Client script failures
+
+JavaScript errors and unhandled promise rejections use an observation-first policy.
+
+A script pattern becomes escalation-eligible only when it reaches:
+
+- 4 occurrences
+- within 15 minutes
+- across at least 2 distinct hashed client signatures
+
+The client signature is derived from page path plus a normalized user-agent family and is stored only as a short hash.
+
+Even after that threshold is met, browser telemetry alone creates a **P2 triage incident**, not a P1. A recheck or stronger system evidence is required before Curator Intelligence should treat it as a confirmed priority.
+
+Once a script pattern is an active incident, later recurrences refresh the incident's `lastSeenAt` and occurrence count. A recurrence never counts as evidence of recovery.
+
+Client incidents recover through the inherited positive-health policy after sufficient healthy observations and a quiet period without recurrence.
+
+## Public-site availability
+
+The public-site watchdog runs on the minutely cron and is intentionally separate from ordinary hourly housekeeping.
+
+The availability policy requires:
+
+1. repeated failed cross-zone observations
+2. at least 3 failed observations before offline escalation
+3. a minimum observation gap
+4. recent successful visitor evidence to veto a false outage claim
+5. independent Curator Verify confirmation before a P0 `public-site-offline` incident can be created
+
+Recovery requires successful evidence rather than a single optimistic probe.
+
+## Heartbeats
 
 Scheduled components should:
 
@@ -36,13 +105,13 @@ Scheduled components should:
 3. call `reportSystemError(...)` when it fails
 4. set `maxAgeMinutes` to a reasonable interval greater than the normal schedule
 
-The Error Bus hourly evaluator treats an established heartbeat that exceeds its `maxAgeMinutes` as a P1 `heartbeat-stale` incident. A component is not considered stale until it has successfully published at least one heartbeat.
+The Error Bus evaluator treats an established heartbeat that exceeds its `maxAgeMinutes` as a P1 `heartbeat-stale` incident. A component is not considered stale until it has successfully published at least one heartbeat.
 
-Request-driven Pages Functions may report uncaught failures through middleware and recover the matching route incident after a later successful request. They should not publish artificial cadence heartbeats unless the route is expected to execute on a defined schedule.
+Request-driven Pages Functions should not publish artificial cadence heartbeats unless the route is expected to execute on a defined schedule.
 
 ## API
 
-Read-only endpoints:
+Read-only endpoints include:
 
 - `GET /`
 - `GET /api/status`
@@ -50,20 +119,37 @@ Read-only endpoints:
 - `GET /api/incidents?active=0`
 - `GET /api/heartbeats`
 - `GET /api/curator-intelligence`
-- `GET /api/curator-intelligence?callback=...`
+- `GET /api/client-network-observations`
+- `GET /api/client-script-observations`
+- `GET /api/top-errors`
+- `GET /api/runtime`
+- `GET /api/hardware/incidents`
+- `GET /api/hardware-console`
 
-Optional network write endpoints:
+Operational endpoints include:
 
 - `POST /api/report`
 - `POST /api/recover`
 - `POST /api/heartbeat`
+- `POST /api/client-error`
+- `POST /api/client-health`
+- `POST /api/check-now`
+- `POST /api/recheck-active`
+- protected reset/recheck and watchdog endpoints used by CuratorOS
 
-Network writes require the `ERROR_REPORT_KEY` Worker secret in the Error Bus and the matching `x-curator-error-key` request header. If that secret is not configured, network writes are intentionally disabled. Current CuratorOS Workers use direct KV reporting and do not require this secret.
+Network infrastructure writes require the appropriate Worker secrets. Browser telemetry endpoints are origin-restricted and intentionally treated as untrusted observation input.
 
-## Severity
+## Top-error analytics
 
-- **P0** — system-critical failure; highest priority
-- **P1** — degraded or failed infrastructure component
-- **P2** — lower-risk system/data-quality warning
+`GET /api/top-errors` ranks retained deduplicated incident counters for incidents whose most recent sighting falls inside the requested window.
 
-Do not use the Error Bus for ordinary editorial, SEO, or content findings. Those remain specialist intelligence signals.
+Important: the occurrence count is the retained lifetime counter for that incident, not an exact count of events occurring only inside the selected window. Treat the endpoint as a ranking aid, not exact time-window event analytics.
+
+## Scheduling
+
+Current Worker cron triggers:
+
+- `* * * * *` — public-site cross-zone watchdog path only
+- `47 * * * *` — ordinary Error Bus housekeeping and inherited maintenance
+
+The minutely schedule is deliberately intercepted so it does not run the full maintenance chain once per minute.
