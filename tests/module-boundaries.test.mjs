@@ -25,3 +25,15 @@ test('production entrypoint is orchestration-sized', async () => {
   const lines = source.split('\n').length;
   assert.ok(lines < 100, `Expected orchestration entrypoint under 100 lines, found ${lines}`);
 });
+
+
+test('core registry owns foundational incident and heartbeat behavior', async () => {
+  const source = await readFile(new URL('../src/core-registry.js', import.meta.url), 'utf8');
+  assert.match(source, /async function upsertIncident/);
+  assert.match(source, /async function recoverIncident/);
+  assert.match(source, /async function writeHeartbeat/);
+  assert.match(source, /async function evaluateHeartbeats/);
+  assert.match(source, /\/api\/status/);
+  assert.match(source, /\/api\/incidents/);
+  assert.match(source, /\/api\/heartbeats/);
+});
