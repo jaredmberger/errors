@@ -49,7 +49,7 @@ test('top errors owns current incident-occurrence analytics and bypasses v1.27',
 });
 
 test('network observations import top-errors directly', async () => {
-  const source = await readFile(new URL('../src/entry-v1.29.js', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../src/client-network-observations.js', import.meta.url), 'utf8');
   assert.match(source, /import base from '\.\/top-errors\.js'/);
   assert.doesNotMatch(source, /entry-v1\.28\.js/);
 });
