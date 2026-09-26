@@ -64,3 +64,17 @@ test('runtime info owns the current deployment metadata endpoint', async () => {
   assert.match(source, /\/api\/runtime/);
   assert.match(source, /cloudflare-workers/);
 });
+
+
+test('named adapter modules own manual, hardware, and analytics surfaces', async () => {
+  const manual = await readFile(new URL('../src/manual-recheck.js', import.meta.url), 'utf8');
+  const ops = await readFile(new URL('../src/hardware-ops.js', import.meta.url), 'utf8');
+  const incidents = await readFile(new URL('../src/hardware-incidents.js', import.meta.url), 'utf8');
+  const exclusion = await readFile(new URL('../src/console-exclusion.js', import.meta.url), 'utf8');
+  const top = await readFile(new URL('../src/top-errors.js', import.meta.url), 'utf8');
+  assert.match(manual, /\/api\/recheck-active/);
+  assert.match(ops, /opsProbe/);
+  assert.match(incidents, /\/api\/hardware\/incidents/);
+  assert.match(exclusion, /monitoring-disabled/);
+  assert.match(top, /incident-occurrences/);
+});

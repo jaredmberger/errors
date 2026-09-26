@@ -61,6 +61,13 @@ The historical files can be retired progressively as their responsibilities are 
 - `src/runtime-info.js` — current `/api/runtime` response with build metadata and Cloudflare version metadata; imports `verification-recovery.js` directly.
 - `src/entry-v1.22.js` — compatibility shim for the former runtime/build metadata layer; v1.23 imports `runtime-info.js` directly.
 - `src/entry-v1.21.js` — retained historical reference only; no longer part of the live runtime path.
+- `src/manual-recheck.js` — manual active-incident recheck endpoint and hardware-console recovery workflow.
+- `src/hardware-ops.js` — lightweight Ops liveness probe, hardware heartbeat handling, hardware-console status, and current runtime payload override.
+- `src/hardware-incidents.js` — compact read-only incident feed for physical Error Bus displays.
+- `src/console-exclusion.js` — intentional exclusion policy for the unmonitored CuratorOS Mini Console.
+- `src/top-errors.js` — current incident-occurrence analytics endpoint; supersedes the old event-scan v1.27 implementation.
+- `src/entry-v1.23.js`, `entry-v1.24.js`, `entry-v1.25.js`, `entry-v1.26.js`, and `entry-v1.28.js` — compatibility shims only.
+- `src/entry-v1.27.js` — historical superseded analytics implementation; no longer part of the live runtime path.
 - `src/error-bus.js` — thin production router/orchestrator.
 
-The core incident/heartbeat layer, public-site watchdog, verification-assisted recovery layer, and runtime/build metadata endpoint are now extracted. The next preferred targets are the remaining manual-recheck, hardware-console, health, and analytics/adaptor wrappers.
+The core incident/heartbeat layer, public-site watchdog, verification-assisted recovery, runtime metadata, manual recheck, hardware adapters, console exclusion, and top-error analytics are now extracted. The remaining live historical dependency is concentrated in the client network-observation layer (v1.29) and the older chain beneath `public-site-watchdog.js`.
