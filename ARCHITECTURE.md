@@ -58,6 +58,9 @@ The historical files can be retired progressively as their responsibilities are 
 - `src/entry-v1.19.js` — compatibility shim for the former watchdog layer; the live v1.20 layer imports `public-site-watchdog.js` directly.
 - `src/verification-recovery.js` — bounded Curator Verify-assisted recovery for active public-site and browser incidents, including cooldown gates and browser-health confirmation.
 - `src/entry-v1.20.js` — compatibility shim for the former verification-assisted recovery layer; v1.21 imports `verification-recovery.js` directly.
+- `src/runtime-info.js` — current `/api/runtime` response with build metadata and Cloudflare version metadata; imports `verification-recovery.js` directly.
+- `src/entry-v1.22.js` — compatibility shim for the former runtime/build metadata layer; v1.23 imports `runtime-info.js` directly.
+- `src/entry-v1.21.js` — retained historical reference only; no longer part of the live runtime path.
 - `src/error-bus.js` — thin production router/orchestrator.
 
-The core incident/heartbeat layer, public-site watchdog, and verification-assisted recovery layer are now extracted. The next preferred targets are the runtime/build metadata wrappers and the remaining triage/adaptor layers.
+The core incident/heartbeat layer, public-site watchdog, verification-assisted recovery layer, and runtime/build metadata endpoint are now extracted. The next preferred targets are the remaining manual-recheck, hardware-console, health, and analytics/adaptor wrappers.
