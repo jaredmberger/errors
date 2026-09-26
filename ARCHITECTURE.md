@@ -30,7 +30,7 @@ This lets the historical chain shrink gradually without forcing a risky all-at-o
 
 ## Current compatibility boundary
 
-The stable entry currently inherits from `entry-v1.29.js` for the remaining compatibility chain. Hardened browser-script policy now lives in `src/browser-telemetry.js`, and full-state recovery export lives in `src/recovery.js`.
+The stable entry no longer imports any `entry-v1.2x.js` wrapper. Client network observations now live in `src/client-network-observations.js`, while hardened browser-script policy lives in `src/browser-telemetry.js` and full-state recovery export lives in `src/recovery.js`.
 
 It intentionally skips `entry-v1.30.js`, matching the production behavior before this refactor.
 
@@ -68,6 +68,8 @@ The historical files can be retired progressively as their responsibilities are 
 - `src/top-errors.js` — current incident-occurrence analytics endpoint; supersedes the old event-scan v1.27 implementation.
 - `src/entry-v1.23.js`, `entry-v1.24.js`, `entry-v1.25.js`, `entry-v1.26.js`, and `entry-v1.28.js` — compatibility shims only.
 - `src/entry-v1.27.js` — historical superseded analytics implementation; no longer part of the live runtime path.
+- `src/client-network-observations.js` — low-confidence browser fetch/network telemetry, observation feed, and one-time migration of legacy network incidents.
+- `src/entry-v1.29.js` — compatibility shim for the former client-network observation layer.
 - `src/error-bus.js` — thin production router/orchestrator.
 
-The core incident/heartbeat layer, public-site watchdog, verification-assisted recovery, runtime metadata, manual recheck, hardware adapters, console exclusion, and top-error analytics are now extracted. The remaining live historical dependency is concentrated in the client network-observation layer (v1.29) and the older chain beneath `public-site-watchdog.js`.
+The entire v1.2x live wrapper sequence is now removed from production traversal. The remaining historical dependency is the older chain beneath `public-site-watchdog.js`, which can now be evaluated separately from the modern adapters.
