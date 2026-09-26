@@ -1,4 +1,4 @@
-import base from './entry-v1.20.js';
+import base from './verification-recovery.js';
 
 const SERVICE = 'CuratorOS Error Bus';
 const VERSION = '1.21.0';
