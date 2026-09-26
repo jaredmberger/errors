@@ -54,6 +54,8 @@ The historical files can be retired progressively as their responsibilities are 
 - `src/recovery.js` — authenticated complete-KV recovery export and integrity metadata.
 - `src/core-registry.js` — foundational incident registry, recovery writes, heartbeat storage/evaluation, status/intelligence adapters, and the legacy root console.
 - `src/entry.js` — tiny compatibility shim that re-exports `core-registry.js` for historical wrappers.
+- `src/public-site-watchdog.js` — cross-zone public-site availability monitoring, visitor-evidence veto, Curator Verify confirmation, P0 outage creation/recovery, and triage-aware status/intelligence views.
+- `src/entry-v1.19.js` — compatibility shim for the former watchdog layer; the live v1.20 layer imports `public-site-watchdog.js` directly.
 - `src/error-bus.js` — thin production router/orchestrator.
 
-The core incident/heartbeat layer is now extracted. The next preferred extraction target is the public-site watchdog and availability/recheck policy.
+The core incident/heartbeat layer and public-site watchdog are now extracted. The next preferred extraction target is the verification-assisted recovery/noise layer currently carried by v1.20, followed by the remaining adapters and triage wrappers.
