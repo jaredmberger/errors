@@ -109,9 +109,15 @@ The Error Bus evaluator treats an established heartbeat that exceeds its `maxAge
 
 Request-driven Pages Functions should not publish artificial cadence heartbeats unless the route is expected to execute on a defined schedule.
 
+## Disaster recovery
+
+The complete shared `CURATOR_ERROR_RECORDS` namespace can be exported through authenticated `GET /api/recovery-export`. Configure the Worker secret `RECOVERY_EXPORT_TOKEN`; the route remains disabled if the secret is absent. See [`RECOVERY_EXPORT.md`](RECOVERY_EXPORT.md) for backup and validation instructions.
+
 ## API
 
 Read-only endpoints include:
+
+- `GET /api/recovery-export` — authenticated full-KV recovery export; requires `X-Curator-Recovery-Key`
 
 - `GET /`
 - `GET /api/status`
