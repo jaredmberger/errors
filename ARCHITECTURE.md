@@ -30,7 +30,7 @@ This lets the historical chain shrink gradually without forcing a risky all-at-o
 
 ## Current compatibility boundary
 
-The stable entry currently inherits from `entry-v1.29.js` and directly contains the hardened browser-script policy and recovery-export route formerly carried by `entry-v1.31.js`.
+The stable entry currently inherits from `entry-v1.29.js` for the remaining compatibility chain. Hardened browser-script policy now lives in `src/browser-telemetry.js`, and full-state recovery export lives in `src/recovery.js`.
 
 It intentionally skips `entry-v1.30.js`, matching the production behavior before this refactor.
 
@@ -47,3 +47,11 @@ Now:
 - deployment configuration no longer changes merely because a feature changes
 
 The historical files can be retired progressively as their responsibilities are extracted and covered by focused tests.
+
+## Current named modules
+
+- `src/browser-telemetry.js` — browser script observations, corroboration thresholds, P2 triage creation, recurrence refresh, and the one-time legacy script-incident migration.
+- `src/recovery.js` — authenticated complete-KV recovery export and integrity metadata.
+- `src/error-bus.js` — thin production router/orchestrator.
+
+The next preferred extraction targets are the core incident registry/heartbeat layer and the public-site watchdog.

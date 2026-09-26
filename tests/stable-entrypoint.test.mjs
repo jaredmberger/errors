@@ -8,12 +8,13 @@ test('production uses the stable Error Bus entrypoint', async () => {
   assert.doesNotMatch(wrangler, /main\s*=\s*"src\/entry-v1\.\d+\.js"/);
 });
 
-test('stable entry preserves the hardened v1.31 behavior boundary', async () => {
+test('stable entry preserves the hardened behavior boundary through named modules', async () => {
   const source = await readFile(new URL('../src/error-bus.js', import.meta.url), 'utf8');
   assert.match(source, /import base from '\.\/entry-v1\.29\.js'/);
+  assert.match(source, /from '\.\/browser-telemetry\.js'/);
+  assert.match(source, /from '\.\/recovery\.js'/);
   assert.match(source, /\/api\/recovery-export/);
   assert.match(source, /\/api\/client-script-observations/);
-  assert.match(source, /fetch-network-error|client-script/);
   assert.doesNotMatch(source, /entry-v1\.30\.js/);
 });
 
