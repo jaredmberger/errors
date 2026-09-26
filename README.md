@@ -10,7 +10,7 @@ Current production entrypoint:
 
 - `src/error-bus.js`
 
-The historical `entry-v1.x.js` chain remains temporarily as a compatibility implementation beneath the stable entrypoint, but the version-wrapper pattern is frozen. Browser script telemetry, recovery export, the foundational incident/heartbeat registry, and the public-site watchdog are now extracted into named modules. `src/entry.js` is reduced to a compatibility shim and `src/error-bus.js` remains a thin router/orchestrator. Future simplification should continue by extracting responsibilities from the compatibility chain rather than adding numbered wrappers. See [`ARCHITECTURE.md`](ARCHITECTURE.md).
+The historical `entry-v1.x.js` chain remains temporarily as a compatibility implementation beneath the stable entrypoint, but the version-wrapper pattern is frozen. Browser script telemetry, recovery export, the foundational incident/heartbeat registry, the public-site watchdog, and verification-assisted recovery are now extracted into named modules. `src/entry.js` is reduced to a compatibility shim and `src/error-bus.js` remains a thin router/orchestrator. Future simplification should continue by extracting responsibilities from the compatibility chain rather than adding numbered wrappers. See [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 The stable entry preserves the hardened v1.31 behavior boundary and deliberately continues to bypass v1.30's superseded client-script escalation layer.
 

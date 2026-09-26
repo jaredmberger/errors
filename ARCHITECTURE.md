@@ -56,6 +56,8 @@ The historical files can be retired progressively as their responsibilities are 
 - `src/entry.js` — tiny compatibility shim that re-exports `core-registry.js` for historical wrappers.
 - `src/public-site-watchdog.js` — cross-zone public-site availability monitoring, visitor-evidence veto, Curator Verify confirmation, P0 outage creation/recovery, and triage-aware status/intelligence views.
 - `src/entry-v1.19.js` — compatibility shim for the former watchdog layer; the live v1.20 layer imports `public-site-watchdog.js` directly.
+- `src/verification-recovery.js` — bounded Curator Verify-assisted recovery for active public-site and browser incidents, including cooldown gates and browser-health confirmation.
+- `src/entry-v1.20.js` — compatibility shim for the former verification-assisted recovery layer; v1.21 imports `verification-recovery.js` directly.
 - `src/error-bus.js` — thin production router/orchestrator.
 
-The core incident/heartbeat layer and public-site watchdog are now extracted. The next preferred extraction target is the verification-assisted recovery/noise layer currently carried by v1.20, followed by the remaining adapters and triage wrappers.
+The core incident/heartbeat layer, public-site watchdog, and verification-assisted recovery layer are now extracted. The next preferred targets are the runtime/build metadata wrappers and the remaining triage/adaptor layers.
