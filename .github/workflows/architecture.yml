@@ -30,4 +30,4 @@ jobs:
         with:
           node-version: '22'
       - run: node --check src/error-bus.js
-      - run: node --test tests/stable-entrypoint.test.mjs tests/module-boundaries.test.mjs tests/core-registry.test.mjs tests/public-site-watchdog.test.mjs tests/verification-recovery.test.mjs tests/runtime-info.test.mjs tests/adapter-chain.test.mjs tests/client-network-observations.test.mjs
+      - run: node --test tests/stable-entrypoint.test.mjs tests/module-boundaries.test.mjs tests/core-registry.test.mjs tests/public-site-watchdog.test.mjs tests/verification-recovery.test.mjs tests/runtime-info.test.mjs tests/adapter-chain.test.mjs tests/client-network-observations.test.mjs tests/clear-recheck-stack.test.mjs
