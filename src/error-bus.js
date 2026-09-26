@@ -1,4 +1,4 @@
-import base from './entry-v1.29.js';
+import base from './client-network-observations.js';
 import {
   clientScriptObservationsResponse,
   handleClientScriptError,
