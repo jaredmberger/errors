@@ -1,4 +1,4 @@
-import base from './entry-v1.28.js';
+import base from './top-errors.js';
 
 const KV = 'CURATOR_ERROR_RECORDS';
 const OBSERVATION_PREFIX = 'observation:client-network:';
