@@ -78,3 +78,11 @@ test('named adapter modules own manual, hardware, and analytics surfaces', async
   assert.match(exclusion, /monitoring-disabled/);
   assert.match(top, /incident-occurrences/);
 });
+
+
+test('client network observations own low-confidence fetch telemetry', async () => {
+  const source = await readFile(new URL('../src/client-network-observations.js', import.meta.url), 'utf8');
+  assert.match(source, /observation:client-network:/);
+  assert.match(source, /fetch-network-error/);
+  assert.match(source, /escalated: false/);
+});
