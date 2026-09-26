@@ -98,3 +98,15 @@ test('named clear-recheck modules own manual reset and shortcut surfaces', async
   assert.match(cors, /tools\.oceanliners\.net/);
   assert.match(shortcut, /\/api\/clear-reset/);
 });
+
+
+test('pre-watchdog responsibilities are owned by named modules', async () => {
+  const monitoring = await readFile(new URL('../src/client-monitoring-base.js', import.meta.url), 'utf8');
+  const consoleUi = await readFile(new URL('../src/console-dashboard.js', import.meta.url), 'utf8');
+  const reporter = await readFile(new URL('../src/client-reporter.js', import.meta.url), 'utf8');
+  const verification = await readFile(new URL('../src/incident-verification.js', import.meta.url), 'utf8');
+  assert.match(monitoring, /public-site-infrastructure/);
+  assert.match(consoleUi, /Error Bus/);
+  assert.match(reporter, /client-reporter\.js/);
+  assert.match(verification, /provisional-observation/);
+});
