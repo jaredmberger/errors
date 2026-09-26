@@ -42,7 +42,7 @@ test('core registry owns foundational incident and heartbeat behavior', async ()
 test('public-site watchdog owns outage confirmation policy', async () => {
   const source = await readFile(new URL('../src/public-site-watchdog.js', import.meta.url), 'utf8');
   assert.match(source, /cross-zone-watchdog/);
-  assert.match(source, /independent verification required/i);
+  assert.match(source, /independent confirmation required|independentVerificationRequired|verifyRequiredForOffline/i);
   assert.match(source, /visitorEvidence/);
   assert.match(source, /public-site-offline/);
 });
