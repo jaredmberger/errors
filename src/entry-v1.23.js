@@ -1,4 +1,4 @@
-import base from './entry-v1.22.js';
+import base from './runtime-info.js';
 
 const KV = 'CURATOR_ERROR_RECORDS';
 const INCIDENT_PREFIX = 'incident:';

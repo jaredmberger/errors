@@ -55,3 +55,12 @@ test('verification recovery owns bounded Curator Verify cleanup policy', async (
   assert.match(source, /verify-assisted-recovery/);
   assert.match(source, /browserHealthConfirmed/);
 });
+
+
+test('runtime info owns the current deployment metadata endpoint', async () => {
+  const source = await readFile(new URL('../src/runtime-info.js', import.meta.url), 'utf8');
+  assert.match(source, /BUILD_META/);
+  assert.match(source, /CF_VERSION_METADATA/);
+  assert.match(source, /\/api\/runtime/);
+  assert.match(source, /cloudflare-workers/);
+});
