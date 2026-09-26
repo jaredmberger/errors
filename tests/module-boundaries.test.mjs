@@ -46,3 +46,12 @@ test('public-site watchdog owns outage confirmation policy', async () => {
   assert.match(source, /visitorEvidence/);
   assert.match(source, /public-site-offline/);
 });
+
+
+test('verification recovery owns bounded Curator Verify cleanup policy', async () => {
+  const source = await readFile(new URL('../src/verification-recovery.js', import.meta.url), 'utf8');
+  assert.match(source, /VERIFY_COOLDOWN_MS/);
+  assert.match(source, /MAX_PER_PASS/);
+  assert.match(source, /verify-assisted-recovery/);
+  assert.match(source, /browserHealthConfirmed/);
+});
