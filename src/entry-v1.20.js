@@ -1,4 +1,4 @@
-import base from './entry-v1.19.js';
+import base from './public-site-watchdog.js';
 
 const KV = 'CURATOR_ERROR_RECORDS';
 const INCIDENT_PREFIX = 'incident:';
