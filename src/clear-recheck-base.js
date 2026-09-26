@@ -1,4 +1,4 @@
-import base from './entry-v1.9.js';
+import base from './generic-rejection-cleanup.js';
 
 const INCIDENT_PREFIX = 'incident:';
 const EVENT_PREFIX = 'event:';
