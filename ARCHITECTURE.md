@@ -52,6 +52,8 @@ The historical files can be retired progressively as their responsibilities are 
 
 - `src/browser-telemetry.js` — browser script observations, corroboration thresholds, P2 triage creation, recurrence refresh, and the one-time legacy script-incident migration.
 - `src/recovery.js` — authenticated complete-KV recovery export and integrity metadata.
+- `src/core-registry.js` — foundational incident registry, recovery writes, heartbeat storage/evaluation, status/intelligence adapters, and the legacy root console.
+- `src/entry.js` — tiny compatibility shim that re-exports `core-registry.js` for historical wrappers.
 - `src/error-bus.js` — thin production router/orchestrator.
 
-The next preferred extraction targets are the core incident registry/heartbeat layer and the public-site watchdog.
+The core incident/heartbeat layer is now extracted. The next preferred extraction target is the public-site watchdog and availability/recheck policy.
