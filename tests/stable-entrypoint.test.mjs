@@ -10,7 +10,7 @@ test('production uses the stable Error Bus entrypoint', async () => {
 
 test('stable entry preserves the hardened behavior boundary through named modules', async () => {
   const source = await readFile(new URL('../src/error-bus.js', import.meta.url), 'utf8');
-  assert.match(source, /import base from '\.\/entry-v1\.29\.js'/);
+  assert.match(source, /import base from '\.\/client-network-observations\.js'/);
   assert.match(source, /from '\.\/browser-telemetry\.js'/);
   assert.match(source, /from '\.\/recovery\.js'/);
   assert.match(source, /\/api\/recovery-export/);
