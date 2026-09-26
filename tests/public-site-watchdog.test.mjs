@@ -27,7 +27,7 @@ test('watchdog module preserves public-site availability policy',async()=>{
 });
 
 test('verification layer imports named watchdog module directly',async()=>{
-  const source=await readFile(new URL('../src/entry-v1.20.js',import.meta.url),'utf8');
+  const source=await readFile(new URL('../src/verification-recovery.js',import.meta.url),'utf8');
   assert.match(source,/import base from '\.\/public-site-watchdog\.js'/);
   assert.doesNotMatch(source,/entry-v1\.19\.js/);
 });

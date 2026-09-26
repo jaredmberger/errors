@@ -8,7 +8,7 @@ Production now starts at:
 
 `wrangler.toml` must point to that stable file.
 
-The historical `entry-v1.x.js` files are a compatibility implementation chain. They record how the Error Bus evolved, but they are no longer the naming convention for new production changes.
+The historical `entry-v1.x.js` files are now compatibility/history shims rather than part of the production import chain. They record how the Error Bus evolved, but named modules own live behavior.
 
 ## Rule for future changes
 
@@ -30,9 +30,9 @@ This lets the historical chain shrink gradually without forcing a risky all-at-o
 
 ## Current compatibility boundary
 
-The stable entry no longer imports any `entry-v1.2x.js` wrapper. Client network observations now live in `src/client-network-observations.js`, while hardened browser-script policy lives in `src/browser-telemetry.js` and full-state recovery export lives in `src/recovery.js`.
+Production modules no longer import any numbered `entry-v1.x.js` wrapper. The numbered files remain only as tiny compatibility shims or retained historical references. The stable entrypoint remains `src/error-bus.js`, and named modules own all live routing and behavior.
 
-It intentionally skips `entry-v1.30.js`, matching the production behavior before this refactor.
+`entry-v1.30.js` remains intentionally superseded and is not part of production.
 
 ## Why this is simpler
 
@@ -77,4 +77,19 @@ The historical files can be retired progressively as their responsibilities are 
 - `src/entry-v1.10.js` through `entry-v1.13.js` — compatibility shims only.
 - `src/error-bus.js` — thin production router/orchestrator.
 
-The entire v1.2x live wrapper sequence is removed from production traversal, and the active v1.10-v1.13 Clear & Recheck stack is now named and shimmed. The remaining historical dependency is concentrated in v1.1-v1.9: client reporting, public-site infrastructure probing, console presentation, and early browser-noise verification.
+The final v1.1-v1.9 stack is now extracted into named modules as well. There are no live numbered-wrapper dependencies left in production.
+
+
+## Final pre-watchdog modules
+
+- `src/client-monitoring-base.js` — client ingestion/health, public-site infrastructure probes, immediate check, and client recovery evaluation.
+- `src/console-dashboard.js` — Error Bus HTML dashboard and incident grouping/navigation.
+- `src/console-check-now-ui.js` — dashboard Check Now controls.
+- `src/client-reporter-filter.js` — opaque HTTP-0 suppression and reporter compatibility behavior.
+- `src/quiet-client-recovery.js` — quiet-window client recovery verification.
+- `src/client-reporter.js` — current browser reporter script.
+- `src/resource-confirmation.js` — server-side confirmation for first-party resource/network reports.
+- `src/incident-verification.js` — transient/provisional browser noise verification and environmental-noise cleanup.
+- `src/generic-rejection-cleanup.js` — one-off generic unhandled-rejection cleanup.
+
+The numbered v1.1-v1.9 files are compatibility shims to those modules.
