@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/recovery-export.test.mjs tests/stable-entrypoint.test.mjs tests/module-boundaries.test.mjs tests/core-registry.test.mjs",
+    "test": "node --test tests/recovery-export.test.mjs tests/stable-entrypoint.test.mjs tests/module-boundaries.test.mjs tests/core-registry.test.mjs tests/public-site-watchdog.test.mjs",
     "recovery:validate": "node scripts/validate-recovery-backup.mjs"
   },
   "engines": {
