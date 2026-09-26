@@ -1,4 +1,4 @@
-import base from './entry-v1.13.js';
+import base from './shortcut-recheck.js';
 
 const KV = 'CURATOR_ERROR_RECORDS';
 const INCIDENT_PREFIX = 'incident:';

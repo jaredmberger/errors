@@ -70,6 +70,11 @@ The historical files can be retired progressively as their responsibilities are 
 - `src/entry-v1.27.js` — historical superseded analytics implementation; no longer part of the live runtime path.
 - `src/client-network-observations.js` — low-confidence browser fetch/network telemetry, observation feed, and one-time migration of legacy network incidents.
 - `src/entry-v1.29.js` — compatibility shim for the former client-network observation layer.
+- `src/clear-recheck-base.js` — authoritative Clear & Recheck archival/revalidation behavior.
+- `src/clear-recheck-browser-aware.js` — browser-aware Clear & Recheck semantics that require browser recurrence rather than synthetic re-promotion.
+- `src/clear-recheck-cors.js` — Tools-origin CORS wrapper for Clear & Recheck.
+- `src/shortcut-recheck.js` — authenticated Shortcut aliases for reset/recheck.
+- `src/entry-v1.10.js` through `entry-v1.13.js` — compatibility shims only.
 - `src/error-bus.js` — thin production router/orchestrator.
 
-The entire v1.2x live wrapper sequence is now removed from production traversal. The remaining historical dependency is the older chain beneath `public-site-watchdog.js`, which can now be evaluated separately from the modern adapters.
+The entire v1.2x live wrapper sequence is removed from production traversal, and the active v1.10-v1.13 Clear & Recheck stack is now named and shimmed. The remaining historical dependency is concentrated in v1.1-v1.9: client reporting, public-site infrastructure probing, console presentation, and early browser-noise verification.

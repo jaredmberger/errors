@@ -86,3 +86,15 @@ test('client network observations own low-confidence fetch telemetry', async () 
   assert.match(source, /fetch-network-error/);
   assert.match(source, /escalated: false/);
 });
+
+
+test('named clear-recheck modules own manual reset and shortcut surfaces', async () => {
+  const base = await readFile(new URL('../src/clear-recheck-base.js', import.meta.url), 'utf8');
+  const browserAware = await readFile(new URL('../src/clear-recheck-browser-aware.js', import.meta.url), 'utf8');
+  const cors = await readFile(new URL('../src/clear-recheck-cors.js', import.meta.url), 'utf8');
+  const shortcut = await readFile(new URL('../src/shortcut-recheck.js', import.meta.url), 'utf8');
+  assert.match(base, /\/api\/clear-recheck/);
+  assert.match(browserAware, /browser-recurrence-required/);
+  assert.match(cors, /tools\.oceanliners\.net/);
+  assert.match(shortcut, /\/api\/clear-reset/);
+});
