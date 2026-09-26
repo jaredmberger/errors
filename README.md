@@ -8,9 +8,11 @@ Production domain: `https://errors.oceanliners.net`
 
 Current production entrypoint:
 
-- `src/entry-v1.31.js`
+- `src/error-bus.js`
 
-The Error Bus still uses the historical layered entry chain for compatibility, but v1.31 deliberately bypasses v1.30's client-script escalation layer and replaces it with the hardened policy described below.
+The historical `entry-v1.x.js` chain remains temporarily as a compatibility implementation beneath the stable entrypoint, but the version-wrapper pattern is now frozen. New production changes should be made in `src/error-bus.js` or extracted into named modules rather than adding another numbered wrapper. See [`ARCHITECTURE.md`](ARCHITECTURE.md).
+
+The stable entry preserves the hardened v1.31 behavior boundary and deliberately continues to bypass v1.30's superseded client-script escalation layer.
 
 ## Storage
 

@@ -1,0 +1,49 @@
+# Error Bus Source Architecture
+
+## Stable production entrypoint
+
+Production now starts at:
+
+`src/error-bus.js`
+
+`wrangler.toml` must point to that stable file.
+
+The historical `entry-v1.x.js` files are a compatibility implementation chain. They record how the Error Bus evolved, but they are no longer the naming convention for new production changes.
+
+## Rule for future changes
+
+Do **not** add `entry-v1.32.js`, `entry-v1.33.js`, and so on.
+
+For a small change, edit `src/error-bus.js`.
+
+For a substantial concern, extract a named module such as:
+
+- `src/incidents.js`
+- `src/heartbeats.js`
+- `src/browser-telemetry.js`
+- `src/public-site-watchdog.js`
+- `src/recovery.js`
+
+and import it from `src/error-bus.js`.
+
+This lets the historical chain shrink gradually without forcing a risky all-at-once rewrite of proven incident behavior.
+
+## Current compatibility boundary
+
+The stable entry currently inherits from `entry-v1.29.js` and directly contains the hardened browser-script policy and recovery-export route formerly carried by `entry-v1.31.js`.
+
+It intentionally skips `entry-v1.30.js`, matching the production behavior before this refactor.
+
+## Why this is simpler
+
+Before this change, every significant feature tended to create another versioned wrapper and production was named after the latest historical layer. That made the implementation harder to reason about and encouraged indefinite chain growth.
+
+Now:
+
+- production has one permanent entrypoint name
+- the version-wrapper chain is frozen
+- new work has an obvious home
+- behavior can be extracted into named modules incrementally
+- deployment configuration no longer changes merely because a feature changes
+
+The historical files can be retired progressively as their responsibilities are extracted and covered by focused tests.

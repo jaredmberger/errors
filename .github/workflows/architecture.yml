@@ -1,0 +1,33 @@
+name: Error Bus architecture
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'wrangler.toml'
+      - 'tests/stable-entrypoint.test.mjs'
+      - 'package.json'
+      - '.github/workflows/architecture.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'wrangler.toml'
+      - 'tests/stable-entrypoint.test.mjs'
+      - 'package.json'
+      - '.github/workflows/architecture.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stable-entrypoint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check src/error-bus.js
+      - run: node --test tests/stable-entrypoint.test.mjs

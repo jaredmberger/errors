@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import worker from '../src/entry-v1.31.js';
+import worker from '../src/error-bus.js';
 
 function makeStore(values){
   const keys=Object.keys(values).sort();
