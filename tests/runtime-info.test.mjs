@@ -38,8 +38,8 @@ test('runtime module bypasses historical v1.21 wrapper',async()=>{
   assert.doesNotMatch(source,/entry-v1\.21\.js/);
 });
 
-test('v1.23 imports named runtime module directly',async()=>{
-  const source=await readFile(new URL('../src/entry-v1.23.js',import.meta.url),'utf8');
+test('manual recheck imports named runtime module directly',async()=>{
+  const source=await readFile(new URL('../src/manual-recheck.js',import.meta.url),'utf8');
   assert.match(source,/import base from '\.\/runtime-info\.js'/);
   assert.doesNotMatch(source,/entry-v1\.22\.js/);
 });
