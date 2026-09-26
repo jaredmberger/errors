@@ -50,6 +50,7 @@ The historical files can be retired progressively as their responsibilities are 
 
 ## Current named modules
 
+- `src/resource-telemetry.js` — browser resource-load observations; only first-party OceanLiners.net resources may continue into incident verification, while opaque/third-party reports remain observations and stale resource incidents can be evidence-retired.
 - `src/browser-telemetry.js` — browser script observations, corroboration thresholds, P2 triage creation, recurrence refresh, and the one-time legacy script-incident migration.
 - `src/recovery.js` — authenticated complete-KV recovery export and integrity metadata.
 - `src/core-registry.js` — foundational incident registry, recovery writes, heartbeat storage/evaluation, status/intelligence adapters, and the legacy root console.

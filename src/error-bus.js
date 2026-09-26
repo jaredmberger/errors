@@ -10,6 +10,11 @@ import {
   authorizeRecoveryExport,
   recoveryExport
 } from './recovery.js';
+import {
+  handleClientResourceError,
+  isClientResourceKind,
+  retireUnprovenResourceIncidents
+} from './resource-telemetry.js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -34,11 +39,18 @@ export default {
         return base.fetch(forwarded, env, ctx);
       }
 
+      const origin = request.headers.get('origin') || '';
+
+      if (isClientResourceKind(raw?.kind) && isAllowedClientOrigin(origin)) {
+        const resourceResult = await handleClientResourceError(request, env, raw);
+        if (resourceResult) return resourceResult;
+        return base.fetch(forwarded, env, ctx);
+      }
+
       if (!isClientScriptKind(raw?.kind)) {
         return base.fetch(forwarded, env, ctx);
       }
 
-      const origin = request.headers.get('origin') || '';
       if (!isAllowedClientOrigin(origin)) {
         return base.fetch(forwarded, env, ctx);
       }
@@ -55,6 +67,14 @@ export default {
       retireLegacyScriptIncidentsOnce(env).catch(error =>
         console.warn(
           'Client script hardening migration skipped:',
+          error?.message || String(error)
+        )
+      )
+    );
+    ctx.waitUntil(
+      retireUnprovenResourceIncidents(env).catch(error =>
+        console.warn(
+          'Client resource retirement skipped:',
           error?.message || String(error)
         )
       )
