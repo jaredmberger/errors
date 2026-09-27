@@ -3,6 +3,7 @@ import base from './generic-rejection-cleanup.js';
 const INCIDENT_PREFIX = 'incident:';
 const EVENT_PREFIX = 'event:';
 const ACTIVE = new Set(['active','degraded']);
+const CLOUDFLARE_MANAGED_PATH_RE = /^\/cdn-cgi\/zaraz(?:\/|$)/i;
 const RETRYABLE_CLIENT_TYPES = new Set([
   'client-resource-error',
   'client-fetch-network-error',
@@ -73,7 +74,7 @@ async function clearAndRecheck(env, ctx) {
   for (const incident of before) {
     if (!RETRYABLE_CLIENT_TYPES.has(String(incident.type || ''))) continue;
     const resource = publicResource(incident?.context?.resource || incident?.context?.page);
-    if (!resource) continue;
+    if (!resource || isCloudflareManagedResource(resource)) continue;
     const verification = await verifyTwice(resource);
     browserRechecks.push({ incidentId:incident.id, resource, ...verification });
     if (!verification.ok) await restoreConfirmedIncident(env, incident, verification);
@@ -186,6 +187,15 @@ async function activeIncidents(env) {
     if (value && ACTIVE.has(value.status)) rows.push(value);
   }
   return rows;
+}
+
+function isCloudflareManagedResource(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return /(^|\.)oceanliners\.net$/i.test(url.hostname) && CLOUDFLARE_MANAGED_PATH_RE.test(url.pathname);
+  } catch {
+    return false;
+  }
 }
 
 function publicResource(value) {
