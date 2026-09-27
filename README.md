@@ -28,6 +28,7 @@ The Error Bus is for infrastructure and operational reliability signals, not ord
 The system favors corroboration over alarm:
 
 - isolated browser failures are observations, not incidents
+- Cloudflare-managed Zaraz resources under `/cdn-cgi/zaraz/` are non-actionable browser telemetry and are never promoted as OceanLiners.net resource incidents
 - repeated browser script failures must recur within a bounded window and across more than one hashed client signature before they can create an incident
 - browser telemetry alone creates only a P2 triage incident
 - browser-originated incidents are not allowed to become high-confidence priorities without recheck or corroborating system evidence
