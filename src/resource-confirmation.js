@@ -1,6 +1,7 @@
 import base from './client-reporter.js';
 
 const PUBLIC_HOST_RE = /(^|\.)oceanliners\.net$/i;
+const CLOUDFLARE_MANAGED_PATH_RE = /^\/cdn-cgi\/zaraz(?:\/|$)/i;
 const CONFIRMABLE_KINDS = new Set(['resource-error', 'fetch-network-error', 'fetch-http-error']);
 
 export default {
@@ -14,6 +15,22 @@ export default {
         const kind = String(body?.kind || '');
         const method = String(body?.method || 'GET').toUpperCase();
         const resource = normalizePublicResource(body?.resource);
+
+        if (CONFIRMABLE_KINDS.has(kind) && resource && isCloudflareManagedResource(resource)) {
+          return new Response(JSON.stringify({
+            ok: true,
+            ignored: true,
+            reason: 'cloudflare-managed-resource'
+          }), {
+            status: 202,
+            headers: {
+              'content-type': 'application/json; charset=utf-8',
+              'cache-control': 'no-store',
+              'access-control-allow-origin': request.headers.get('origin') || '*',
+              'vary': 'Origin'
+            }
+          });
+        }
 
         if (CONFIRMABLE_KINDS.has(kind) && method === 'GET' && resource) {
           const confirmation = await verifyPublicResource(resource, kind);
@@ -47,6 +64,15 @@ export default {
     return base.scheduled(controller, env, ctx);
   }
 };
+
+function isCloudflareManagedResource(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return PUBLIC_HOST_RE.test(url.hostname) && CLOUDFLARE_MANAGED_PATH_RE.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
 
 function normalizePublicResource(value) {
   try {
