@@ -30,3 +30,25 @@ test('stable entry intercepts resource errors before legacy ingestion', async ()
   assert.match(source, /handleClientResourceError/);
   assert.match(source, /retireUnprovenResourceIncidents/);
 });
+
+
+test('Cloudflare Zaraz resource failures stay non-actionable', async () => {
+  const telemetry = await readFile(new URL('../src/resource-telemetry.js', import.meta.url), 'utf8');
+  const reporter = await readFile(new URL('../src/client-reporter.js', import.meta.url), 'utf8');
+  const confirmation = await readFile(new URL('../src/resource-confirmation.js', import.meta.url), 'utf8');
+  const clearRecheck = await readFile(new URL('../src/clear-recheck-base.js', import.meta.url), 'utf8');
+
+  assert.match(telemetry, /cdn-cgi\\\/zaraz/);
+  assert.match(telemetry, /cloudflare-managed-resource-observation/);
+  assert.match(telemetry, /edge-managed infrastructure/);
+  assert.match(reporter, /cloudflareManaged/);
+  assert.match(reporter, /cdn-cgi\\\\\/zaraz/);
+  assert.match(confirmation, /cloudflare-managed-resource/);
+  assert.match(clearRecheck, /isCloudflareManagedResource/);
+});
+
+test('existing Zaraz resource incidents are retired without direct endpoint verification', async () => {
+  const source = await readFile(new URL('../src/resource-telemetry.js', import.meta.url), 'utf8');
+  assert.match(source, /if \(resource && isCloudflareManagedResource\(resource\)\)/);
+  assert.match(source, /non-actionable telemetry and has been retired/);
+});
