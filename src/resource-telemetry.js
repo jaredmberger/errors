@@ -5,6 +5,7 @@ const EVENT_PREFIX = 'event:';
 const OBSERVATION_TTL = 60 * 60 * 24 * 7;
 const RECOVERED_TTL = 60 * 60 * 24 * 180;
 const PUBLIC_HOST_RE = /(^|\.)oceanliners\.net$/i;
+const CLOUDFLARE_MANAGED_PATH_RE = /^\/cdn-cgi\/zaraz(?:\/|$)/i;
 
 export function isClientResourceKind(kind) {
   return String(kind || '') === 'resource-error';
@@ -13,6 +14,19 @@ export function isClientResourceKind(kind) {
 export async function handleClientResourceError(request, env, raw) {
   const origin = request.headers.get('origin') || '';
   const resource = normalizePublicResource(raw?.resource);
+
+  if (resource && isCloudflareManagedResource(resource)) {
+    await recordObservation(env, raw, origin, {
+      classification: 'cloudflare-managed-resource-observation',
+      reason: 'Cloudflare Zaraz is edge-managed infrastructure; standalone browser resource failures are not promoted to OceanLiners.net incidents.'
+    });
+    return resourceJson({
+      ok: true,
+      observation: true,
+      promoted: false,
+      classification: 'cloudflare-managed-resource-observation'
+    }, 202, origin);
+  }
 
   if (!resource) {
     await recordObservation(env, raw, origin, {
@@ -49,7 +63,9 @@ export async function retireUnprovenResourceIncidents(env) {
     let verification = null;
     let reason = '';
 
-    if (!resource) {
+    if (resource && isCloudflareManagedResource(resource)) {
+      reason = 'Cloudflare Zaraz is edge-managed infrastructure; this browser resource incident is non-actionable telemetry and has been retired.';
+    } else if (!resource) {
       reason = 'Resource report was missing, opaque, or outside the OceanLiners.net zone; browser-only resource observations are not active incidents.';
     } else {
       verification = await verifyFirstPartyResource(resource);
@@ -133,6 +149,15 @@ async function verifyFirstPartyResource(resource) {
     };
   } finally {
     clearTimeout(timer);
+  }
+}
+
+function isCloudflareManagedResource(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return PUBLIC_HOST_RE.test(url.hostname) && CLOUDFLARE_MANAGED_PATH_RE.test(url.pathname);
+  } catch {
+    return false;
   }
 }
 

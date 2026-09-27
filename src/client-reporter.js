@@ -30,6 +30,7 @@ const COOLDOWN=60000;
 let pageHadRealError=false;
 function clean(v,n=1200){return String(v??'').slice(0,n)}
 function sameOlcZone(value){try{const u=new URL(value,location.href);return /(^|\\.)oceanliners\\.net$/i.test(u.hostname);}catch{return false}}
+function cloudflareManaged(value){try{const u=new URL(value,location.href);return /(^|\\.)oceanliners\\.net$/i.test(u.hostname)&&/^\\/cdn-cgi\\/zaraz(?:\\/|$)/i.test(u.pathname);}catch{return false}}
 function samePageOrigin(value){try{return new URL(value,location.href).origin===location.origin;}catch{return false}}
 function post(url,payload){try{return fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),keepalive:true,cache:'no-store',credentials:'omit'}).catch(()=>{});}catch{}}
 function send(payload){try{const key=[payload.kind,payload.message,payload.filename,payload.resource].join('|');const now=Date.now();if(now-(seen.get(key)||0)<COOLDOWN)return;seen.set(key,now);pageHadRealError=true;post(ERROR_ENDPOINT,{...payload,pageUrl:location.href});}catch{}}
@@ -39,7 +40,7 @@ window.addEventListener('error',async e=>{
   if(e.target&&e.target!==window){
     const tag=String(e.target.tagName||'resource').toUpperCase();
     const src=e.target.src||e.target.href||'';
-    if(!src||src.startsWith(BUS))return;
+    if(!src||src.startsWith(BUS)||cloudflareManaged(src))return;
     if(tag!=='SCRIPT'&&tag!=='LINK')return;
     if(samePageOrigin(src)&&await verifyGet(src))return;
     if(!sameOlcZone(src))return;
