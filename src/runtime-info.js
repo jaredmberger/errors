@@ -12,9 +12,13 @@ export default {
       const meta = env.CF_VERSION_METADATA || {};
       return json({
         ok: true,
+        contractVersion: 1,
         service: SERVICE,
-        version: VERSION,
         repository: REPOSITORY,
+        productionBranch: 'main',
+        version: VERSION,
+        commit: BUILD_META.commit || null,
+        cloudflareDeploymentId: meta.id || null,
         runtime: 'cloudflare-workers',
         build: {
           commit: BUILD_META.commit,
