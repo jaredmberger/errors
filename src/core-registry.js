@@ -170,9 +170,12 @@ async function writeHeartbeat(env, raw) {
   await env.CURATOR_ERROR_RECORDS.put(`${HEARTBEAT_PREFIX}${slug(source)}:${slug(component)}`, JSON.stringify(heartbeat));
 
   if (heartbeat.status === 'ok') {
-    const incidents = await listIncidents(env, { activeOnly: true, limit: MAX_INCIDENTS });
-    const stale = incidents.find(item => item.type === 'heartbeat-stale' && item.source === source && item.component === component);
-    if (stale) await recoverIncident(env, { fingerprint: stale.fingerprint, message: 'Heartbeat resumed.' });
+    // Heartbeat recovery has a deterministic fingerprint; avoid scanning every incident on each ping.
+    const fingerprint = `heartbeat-${slug(source)}-${slug(component)}`;
+    const stale = await env.CURATOR_ERROR_RECORDS.get(INCIDENT_PREFIX + fingerprint, 'json');
+    if (stale && ACTIVE_STATUSES.has(stale.status) && stale.type === 'heartbeat-stale') {
+      await recoverIncident(env, { fingerprint, message: 'Heartbeat resumed.' });
+    }
   }
   return heartbeat;
 }
