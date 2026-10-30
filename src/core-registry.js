@@ -2,6 +2,9 @@ const INCIDENT_PREFIX = 'incident:';
 const HEARTBEAT_PREFIX = 'heartbeat:';
 const EVENT_PREFIX = 'event:';
 const MAX_INCIDENTS = 250;
+// Best-effort, per-isolate microcache for read-only status endpoints; no extra KV writes.
+const STATUS_CACHE_MS = 15000;
+let activeStatusCache = null;
 const ACTIVE_STATUSES = new Set(['active', 'degraded']);
 const SEVERITY_RANK = { p0: 4, critical: 4, p1: 3, high: 3, p2: 2, medium: 2, low: 1, info: 0 };
 
@@ -19,14 +22,14 @@ export default {
     }
 
     if (url.pathname === '/api/status' && request.method === 'GET') {
-      const incidents = await listIncidents(env, { activeOnly: true, limit: MAX_INCIDENTS });
+      const incidents = await readActiveIncidentsForStatus(env);
       return json(buildStatus(incidents));
     }
 
     if (url.pathname === '/api/incidents' && request.method === 'GET') {
       const activeOnly = url.searchParams.get('active') !== '0';
       const limit = clampInt(url.searchParams.get('limit'), 1, MAX_INCIDENTS, 100);
-      const incidents = await listIncidents(env, { activeOnly, limit });
+      const incidents = activeOnly ? (await readActiveIncidentsForStatus(env)).slice(0, limit) : await listIncidents(env, { activeOnly, limit });
       return json({ ok: true, generatedAt: new Date().toISOString(), activeOnly, count: incidents.length, incidents });
     }
 
@@ -75,7 +78,7 @@ export default {
     }
 
     if (url.pathname === '/api/curator-intelligence' && request.method === 'GET') {
-      const incidents = await listIncidents(env, { activeOnly: true, limit: MAX_INCIDENTS });
+      const incidents = await readActiveIncidentsForStatus(env);
       const payload = buildIntelligencePayload(incidents);
       const callback = safeCallback(url.searchParams.get('callback'));
       return callback ? javascript(payload, callback) : json(payload);
@@ -197,6 +200,25 @@ async function evaluateHeartbeats(env) {
       message: `No successful heartbeat has been recorded for ${Math.round(ageMs / 60000)} minutes.`,
       context: { lastHeartbeatAt: heartbeat.at, expectedWithinMinutes: heartbeat.maxAgeMinutes },
     });
+  }
+}
+
+// Read endpoints can reuse one recent snapshot per isolate; mutation and cron paths always read live KV.
+async function readActiveIncidentsForStatus(env) {
+  const now = Date.now();
+  if (activeStatusCache && activeStatusCache.expiresAt > now) {
+    return activeStatusCache.promise;
+  }
+  const entry = {
+    expiresAt: now + STATUS_CACHE_MS,
+    promise: listIncidents(env, { activeOnly: true, limit: MAX_INCIDENTS })
+  };
+  activeStatusCache = entry;
+  try {
+    return await entry.promise;
+  } catch (error) {
+    if (activeStatusCache === entry) activeStatusCache = null;
+    throw error;
   }
 }
 
